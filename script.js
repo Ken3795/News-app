@@ -1,73 +1,71 @@
-// API Endpoint (Sample: Free News API or JSON Server Endpoint)
-const apiEndpoint = "https://jsonplaceholder.typicode.com/posts";
+// Replace 'YOUR_API_KEY' with your actual API key
+const API_KEY = '9af879527b0049d38bfc150335b86838';
+const API_URL = `https://newsapi.org/v2/top-headlines?country=us&apiKey=${API_KEY}`;
 
-// Select DOM Elements
-const newsContainer = document.getElementById("newsContainer");
-const searchInput = document.getElementById("searchInput");
-const toggleThemeBtn = document.getElementById("toggleTheme");
+// Get DOM elements
+const newsContainer = document.getElementById('newsContainer');
+const searchInput = document.getElementById('searchInput');
+const darkModeToggle = document.getElementById('darkModeToggle');
 
-// Fetch News Data
-async function fetchNews() {
+// Fetch and display news
+async function fetchNews(query = '') {
+  const url = query ? `${API_URL}&q=${query}` : API_URL;
+
   try {
-    const response = await fetch(apiEndpoint);
+    const response = await fetch(url);
     const data = await response.json();
+    console.log('API Response:', data); // Log the response to console for debugging
 
-    // Simulating simplified news (title, body)
-    const newsData = data.slice(0, 10).map(news => ({
-      title: news.title,
-      description: news.body,
-      image: "https://via.placeholder.com/300x200", // Placeholder image
-    }));
-
-    renderNews(newsData);
+    if (data.articles && data.articles.length > 0) {
+      displayNews(data.articles);
+    } else {
+      newsContainer.innerHTML = '<p>No articles found.</p>';
+    }
   } catch (error) {
-    console.error("Error fetching news:", error);
+    newsContainer.innerHTML = '<p>Failed to load news. Please try again later.</p>';
+    console.error('Error fetching news:', error);
   }
 }
 
-// Render News Cards
-function renderNews(newsData) {
-  newsContainer.innerHTML = ""; // Clear previous results
-  newsData.forEach(news => {
-    const card = document.createElement("div");
-    card.className = "news-card";
+// Display news articles
+function displayNews(articles) {
+  newsContainer.innerHTML = articles
+    .map(
+      (article, index) => `
+    <div class="news-card" data-index="${index}">
+      <img src="${article.urlToImage || 'https://via.placeholder.com/300'}" alt="News Image">
+      <div class="content">
+        <h2>${article.title}</h2>
+        <p>${article.description || 'No description available.'}</p>
+        <a href="${article.url}" target="_blank">Read More</a>
+        <button class="like-button">Like</button>
+      </div>
+    </div>
+  `
+    )
+    .join('');
 
-    card.innerHTML = `
-      <img src="${news.image}" alt="${news.title}">
-      <h3>${news.title}</h3>
-      <p>${news.description}</p>
-      <button class="like-btn">👍 Like</button>
-    `;
-
-    // Add Like Event Listener
-    const likeBtn = card.querySelector(".like-btn");
-    likeBtn.addEventListener("click", () => {
-      alert(`You liked: ${news.title}`);
+  // Add event listeners for like buttons
+  document.querySelectorAll('.like-button').forEach(button => {
+    button.addEventListener('click', () => {
+      button.classList.toggle('liked');
     });
-
-    newsContainer.appendChild(card);
   });
 }
 
-// Search Functionality
-searchInput.addEventListener("input", (e) => {
-  const query = e.target.value.toLowerCase();
-  const newsCards = document.querySelectorAll(".news-card");
-
-  newsCards.forEach(card => {
-    const title = card.querySelector("h3").textContent.toLowerCase();
-    if (title.includes(query)) {
-      card.style.display = "block";
-    } else {
-      card.style.display = "none";
-    }
-  });
+// Toggle dark mode
+darkModeToggle.addEventListener('click', () => {
+  document.body.classList.toggle('dark-mode');
+  darkModeToggle.textContent = document.body.classList.contains('dark-mode')
+    ? 'Light Mode'
+    : 'Dark Mode';
 });
 
-// Toggle Dark Mode
-toggleThemeBtn.addEventListener("click", () => {
-  document.body.classList.toggle("dark-mode");
+// Add event listener for search
+searchInput.addEventListener('input', () => {
+  const query = searchInput.value.trim();
+  fetchNews(query);
 });
 
-// Initialize App
+// Initial fetch
 fetchNews();
